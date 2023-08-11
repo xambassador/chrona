@@ -1,0 +1,36 @@
+{
+  "name": "express-pretty-logger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:run": "ts-node ./index.ts",
+    "dev:server": "ts-node ./example.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bytes": "^3.1.2",
+    "chalk": "4.1.2",
+    "express": "^4.18.2",
+    "on-finished": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/bytes": "^3.1.1",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.4.10",
+    "@types/on-finished": "^2.3.1",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
+    "eslint": "^8.47.0",
+    "eslint-config-airbnb-typescript": "^17.1.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.28.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-unused-imports": "^3.0.0",
+    "prettier": "^3.0.1",
+    "prettier-plugin-jsdoc": "^1.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}
