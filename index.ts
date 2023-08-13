@@ -91,6 +91,11 @@ const MONTHS = [
 const regexes = {
   ipv4: /^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/,
   ipv6: /^((?=.*::)(?!.*::.+::)(::)?([\dA-F]{1,4}:(:|\b)|){5}|([\dA-F]{1,4}:){6})((([\dA-F]{1,4}((?!\3)::|:\b|$))|(?!\2\3)){2}|(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4})$/i,
+  number: /(\d)(?=(\d\d\d)+(?!\d))/g,
+  time: /(\d+)(ms|s)/,
+  token: /:\[([a-z\-_]+)\]/g,
+  tokenWithourBrackets: /\[|\]/g,
+  tokenFormat: /(:\[[^\]]+\]|:[a-z\-_]+)/gi,
 };
 
 /**
@@ -105,7 +110,7 @@ function humanize(n: string, o?: Options) {
   const d = options.delimiter || ",";
   const s = options.separator || ".";
   const number = n.toString().split(".");
-  number[0] = number[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, `$1${d}`);
+  number[0] = number[0].replace(regexes.number, `$1${d}`);
   return number.join(s);
 }
 
@@ -116,7 +121,7 @@ function humanize(n: string, o?: Options) {
  * @returns {Chalk} Chalk instance
  */
 function getColorForTime(t: string) {
-  const match = t.match(/(\d+)(ms|s)/);
+  const match = t.match(regexes.time);
 
   if (match) {
     const value = parseInt(match[1], 10);
@@ -377,8 +382,8 @@ const RESPONSE: Record<
  * @returns {function}
  */
 function interpolate(token: string, color: string | chalk.Chalk) {
-  if (token.match(/:\[([a-z\-_]+)\]/g)) {
-    const t = token.replace(/\[|\]/g, "");
+  if (token.match(regexes.token)) {
+    const t = token.replace(regexes.tokenWithourBrackets, "");
     return (isRequest: boolean, req: Request, res: Response, err: any) => {
       if (isRequest) {
         const v = REQUEST[t](req);
@@ -451,11 +456,14 @@ function extractTokens(format: string) {
 
   let flagIncomingSet = false;
   const tokens = format
-    .split(/(:\[[^\]]+\]|:[a-z\-_]+)/gi)
+    .split(regexes.tokenFormat)
     .filter((token) => token.trim() !== "")
     .map((token) => token.replace(/\s/g, ""))
     .filter((token) => {
-      const tokenWithoutBrackets = token.replace(/\[|\]/g, "");
+      const tokenWithoutBrackets = token.replace(
+        regexes.tokenWithourBrackets,
+        "",
+      );
       if (tokenWithoutBrackets === ":incoming") flagIncomingSet = true;
       return TOKENS.includes(tokenWithoutBrackets);
     });
@@ -485,7 +493,7 @@ function compile(format: string) {
   let i = -999;
 
   tokens.forEach((token) => {
-    const value = token.replace(/\[|\]/g, "");
+    const value = token.replace(regexes.tokenWithourBrackets, "");
     if (value === ":incoming") {
       requestOutput.push(chalk.gray("<--"));
       responseOutput.push("-->");
@@ -534,6 +542,10 @@ function compile(format: string) {
         upstream = chalk.red("xxx");
       } else if (event === "close") {
         upstream = chalk.yellow("-x-");
+      } else if (response.statusCode >= 500) {
+        upstream = chalk.red("xxx");
+      } else if (response.statusCode === 404) {
+        upstream = chalk.cyan("-X-");
       } else {
         upstream = chalk.gray("-->");
       }

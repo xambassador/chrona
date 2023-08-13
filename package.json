@@ -1,14 +1,21 @@
 {
   "name": "express-pretty-logger",
   "version": "1.0.0",
-  "description": "",
+  "description": "Simple HTTP request logger middleware for express.js",
   "main": "index.js",
+  "keywords": [
+    "express",
+    "http",
+    "logger",
+    "middleware"
+  ],
   "scripts": {
     "dev:run": "ts-node ./index.ts",
-    "dev:server": "ts-node ./example.ts"
+    "dev:server": "ts-node ./example.ts",
+    "build": "tsc"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Yash Ramoliya <yashramoliya12@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "bytes": "^3.1.2",

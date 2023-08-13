@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import Boom from "@hapi/boom";
 
 import Logger from "./index";
@@ -42,14 +42,6 @@ router.get("/error", () => {
 });
 
 app.use(router);
-
-app.use((err: any, req: Request, res: Response) => {
-  console.error(err.stack);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  res._error = err;
-  return res.status(500).send("Something broke!");
-});
 
 app.listen(3000, () => {
   console.log("Server started on port 3000");
