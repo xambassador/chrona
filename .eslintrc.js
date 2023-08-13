@@ -25,6 +25,7 @@ module.exports = {
   },
   rules: {
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/default-param-last": "off",
   },
   ignorePatterns: ["**/*.js", "node_modules", "dist", "coverage"],
 };
