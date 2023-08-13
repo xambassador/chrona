@@ -586,7 +586,7 @@ function transporter(options?: LoggerOptions) {
  * @param format {string}
  * @returns {Function} Middleware function
  */
-const logger = (format?: string, options?: LoggerOptions) => {
+const logger = (format?: string | null, options?: LoggerOptions) => {
   const print = transporter(options);
   const { logRequest, logResponse } = compile(format || DEFAULT_FORMAT);
 

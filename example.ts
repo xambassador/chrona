@@ -1,17 +1,63 @@
 import express from "express";
 import Boom from "@hapi/boom";
+import winston from "winston";
 
-import Logger from "./index";
+import chrona from "./index";
 
 const app = express();
 
 const router = express.Router();
 
-app.use(
-  Logger(
-    ":[date] :incoming :method :url :status :response-time :content-length :user-agent :http-version",
-  ),
-);
+class Logger {
+  output: winston.Logger;
+
+  public constructor() {
+    this.output = winston.createLogger({
+      level: "info",
+    });
+    this.output.add(
+      new winston.transports.Console({
+        format: winston.format.combine(
+          winston.format.colorize(),
+          winston.format.printf((info) => {
+            const { message, level } = info;
+            return `${level}: ${message}`;
+          }),
+        ),
+      }),
+    );
+  }
+
+  public info(message: string) {
+    this.output.info(message);
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const logger = new Logger();
+
+// winston as transporter
+// app.use(
+//   chrona(
+//     ":[date] :incoming :method :url :status :response-time :content-length :user-agent :http-version",
+//     (str) => logger.info(str),
+//   ),
+// );
+
+// default format and transporter
+app.use(chrona());
+
+router.get("/users", (_, res) => {
+  return res.status(200).json({
+    message: "Users fetched successfully",
+  });
+});
+
+router.post("/users", (_, res) => {
+  return res.status(201).json({
+    message: "Users created successfully",
+  });
+});
 
 router.get("/200", (req, res) => {
   return res.status(200).send("OK");
