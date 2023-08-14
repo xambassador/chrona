@@ -1,6 +1,6 @@
 # chrona
 
-Simple HTTP request logger middleware for express.js inspired from [koa-logger](https://github.com/koajs/logger), written in typescript.
+Simple HTTP request logger middleware for express.js inspired by [koa-logger](https://github.com/koajs/logger), written in typescript.
 
 ![](public/screenshot.png)
 
@@ -23,7 +23,7 @@ app.use(chrona())
 > Make sure to add chrona to first in middleware chain.
 
 ### chrona(format, options)
-Create a new chrona middleware function using the given `format` and `options`. By default it creates with default `format` and default `options` value.
+Create a new chrona middleware function using the given `format` and `options`. By default, it creates with default `format` and default `options` value.
 The `format` argument is a string of predefined token names(see below for token names).
 
 #### Predefined token names.
