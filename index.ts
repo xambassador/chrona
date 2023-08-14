@@ -89,7 +89,9 @@ const MONTHS = [
 ];
 
 const regexes = {
+  // https://github.com/pbojinov/request-ip/blob/master/lib/is.js#L4
   ipv4: /^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/,
+  // https://github.com/pbojinov/request-ip/blob/master/lib/is.js#L5
   ipv6: /^((?=.*::)(?!.*::.+::)(::)?([\dA-F]{1,4}:(:|\b)|){5}|([\dA-F]{1,4}:){6})((([\dA-F]{1,4}((?!\3)::|:\b|$))|(?!\2\3)){2}|(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4})$/i,
   number: /(\d)(?=(\d\d\d)+(?!\d))/g,
   time: /(\d+)(ms|s)/,
@@ -106,6 +108,7 @@ const regexes = {
  * @returns {string} Human readable string
  */
 function humanize(n: string, o?: Options) {
+  // https://github.com/component/humanize-number/blob/master/index.js
   const options = o || {};
   const d = options.delimiter || ",";
   const s = options.separator || ".";
