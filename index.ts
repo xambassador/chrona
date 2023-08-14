@@ -614,4 +614,4 @@ const logger = (format?: string | null, options?: LoggerOptions) => {
   };
 };
 
-export default logger;
+module.exports = logger;

@@ -1,8 +1,9 @@
 {
-  "name": "express-pretty-logger",
+  "name": "chrona",
   "version": "1.0.0",
   "description": "Simple HTTP request logger middleware for express.js",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "keywords": [
     "express",
     "http",
@@ -13,6 +14,10 @@
     "dev:run": "ts-node ./index.ts",
     "dev:server": "ts-node ./example.ts",
     "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xambassador/chrona.git"
   },
   "author": "Yash Ramoliya <yashramoliya12@gmail.com>",
   "license": "MIT",
