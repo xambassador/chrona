@@ -1,6 +1,6 @@
 {
   "name": "chrona",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple HTTP request logger middleware for express.js",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -46,5 +46,7 @@
     "typescript": "^5.1.6",
     "winston": "^3.10.0"
   },
-  "files": ["dist/**/*"]
+  "files": [
+    "dist/**/*"
+  ]
 }
