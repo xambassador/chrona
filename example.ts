@@ -47,7 +47,7 @@ const logger = new Logger();
 // default format and transporter
 app.use(
   chrona(
-    ":[date] :incoming :[method] :url :[status] :[response-time] :[content-length] :user-agent :[http-version]",
+    ":date :incoming :method :url :status :response-time :content-length :user-agent :http-version",
   ),
 );
 
