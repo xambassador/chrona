@@ -100,13 +100,7 @@ const regexes = {
   tokenFormat: /(:\[[^\]]+\]|:[a-z\-_]+)/gi,
 } as const;
 
-/**
- * Convert number into human readable format.
- *
- * @param n {string} Number need to convert in human readable
- * @param o {Options} Options
- * @returns {string} Human readable string
- */
+/** Convert number into human readable format. */
 function humanize(n: string, o?: Options) {
   // https://github.com/component/humanize-number/blob/master/index.js
   const options = o || {};
@@ -117,24 +111,14 @@ function humanize(n: string, o?: Options) {
   return number.join(s);
 }
 
-/**
- * Get color for time.
- *
- * @param t {number} Time
- * @returns {Chalk} Chalk instance
- */
+/** Get color for time. */
 function getColorForTime(t: number) {
   if (t < 50) return timeColorMap["<50ms"];
   if (t < 100) return timeColorMap["<100ms"];
   return timeColorMap[">=100ms"];
 }
 
-/**
- * Get difference of two dates in human readable format.
- *
- * @param start {number} Start time
- * @returns {string} Human readable string
- */
+/** Get difference of two dates in human readable format. */
 function time(start: number) {
   const delta = Date.now() - start;
   const t = humanize(
@@ -147,23 +131,13 @@ function time(start: number) {
   };
 }
 
-/**
- * Check if value is IP address.
- *
- * @param value {string | undefined} Value to check
- * @returns {boolean} True if value is IP address
- */
+/** Check if value is IP address. */
 function ip(value: string | undefined) {
   if (!value) return false;
   return regexes.ipv4.test(value) || regexes.ipv6.test(value);
 }
 
-/**
- * Get forwarded for value from header.
- *
- * @param value {string} Header value
- * @returns {string} Forwarded for value
- */
+/** Get forwarded for value from header. */
 function getForwardedFor(value: string) {
   if (!value) return "-";
 
@@ -184,12 +158,7 @@ function getForwardedFor(value: string) {
   return "-";
 }
 
-/**
- * Get IP address from request.
- *
- * @param req {Request} Request
- * @returns {string | undefined} IP address
- */
+/** Get IP address from request. */
 function getIp(req: Request) {
   if (!req.headers) return "-";
   if (ip(req.headers["x-client-ip"] as string)) {
@@ -228,23 +197,13 @@ function getIp(req: Request) {
   return "-";
 }
 
-/**
- * Pad number with zero.
- *
- * @param num {number}
- * @returns {string}
- */
+/** Pad number with zero. */
 function pad2(num: number) {
   const str = String(num);
   return (str.length === 1 ? "0" : "") + str;
 }
 
-/**
- * Get date in Apache common log format.
- *
- * @param dateTime {Date}
- * @returns {string}
- */
+/** Get date in Apache common log format. */
 function date(dateTime: Date) {
   const currentDate = dateTime.getUTCDate();
   const hour = dateTime.getUTCHours();
@@ -286,12 +245,7 @@ const TOKENS = [
 
 type Token = (typeof TOKENS)[number];
 
-/**
- * Get chalk color function for provided color.
- *
- * @param color {string | chalk.Chalk} Color
- * @returns {chalk.Chalk} Chalk instance
- */
+/** Get chalk color function for provided color. */
 function colorizedFn(color: string | chalk.Chalk) {
   let colorized = chalk.gray;
 
@@ -371,13 +325,7 @@ const RESPONSE: Record<
   ":url": (req) => req.originalUrl || req.url,
 } as const;
 
-/**
- * Pre compile format string.
- *
- * @param token {string}
- * @param color {string | chalk.Chalk}
- * @returns {function}
- */
+/** Pre compile format string. */
 function interpolate(token: string, color: string | chalk.Chalk) {
   const isContainsBrackets = token.match(regexes.tokenWithoutBrackets);
 
@@ -434,12 +382,7 @@ const RESPONSE_TOKENS: ResponseTokens = {
 
 const parsedTokens: ParsedTokens = {};
 
-/**
- * Extract tokens from format string.
- *
- * @param format {string}
- * @returns {ParsedTokens}
- */
+/** Extract tokens from format string. */
 function extractTokens(format: string) {
   if (parsedTokens[format]) return parsedTokens[format];
 
@@ -465,12 +408,7 @@ function extractTokens(format: string) {
   return parsedTokens[format];
 }
 
-/**
- * Compile format string.
- *
- * @param format {string} format string
- * @returns {function} Compiled format functions
- */
+/** Compile format string. */
 function compile(format: string) {
   const { flagIncomingSet, tokens } = extractTokens(format);
 
@@ -552,9 +490,6 @@ function compile(format: string) {
 /**
  * Transporter function. If no transporter is provided, it will default to
  * `console.log`.
- *
- * @param options {LoggerOptions}
- * @returns {Function} Transporter function
  */
 function transporter(options?: LoggerOptions) {
   let transport: (string: string, args: unknown[]) => void | undefined;
@@ -568,13 +503,7 @@ function transporter(options?: LoggerOptions) {
   };
 }
 
-/**
- * Logger middleware.
- *
- * @param options {LoggerOptions}
- * @param format {string}
- * @returns {Function} Middleware function
- */
+/** Logger middleware. */
 const logger = (format?: string | null, options?: LoggerOptions) => {
   const print = transporter(options);
   const { logRequest, logResponse } = compile(format || DEFAULT_FORMAT);
