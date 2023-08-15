@@ -54,6 +54,7 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 
 # Builds
+dist/
 
 # Linting
 lint-results

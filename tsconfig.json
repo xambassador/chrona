@@ -4,15 +4,11 @@
     "module": "commonjs",
     "baseUrl": "./",
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,
-    "moduleResolution": "Node16",
-    "removeComments": true
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "dist", "./example.ts"]
 }

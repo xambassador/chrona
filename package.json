@@ -13,7 +13,8 @@
   "scripts": {
     "dev:run": "ts-node ./index.ts",
     "dev:server": "ts-node ./example.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "prepare": "yarn build"
   },
   "repository": {
     "type": "git",
@@ -44,5 +45,6 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
     "winston": "^3.10.0"
-  }
+  },
+  "files": ["dist/**/*"]
 }
