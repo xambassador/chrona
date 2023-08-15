@@ -46,13 +46,13 @@ const colorCodes: Record<number, string> = {
   3: "cyan",
   4: "yellow",
   5: "red",
-};
+} as const;
 
 const timeColorMap = {
   "<50ms": chalk.green,
   "<100ms": chalk.magenta,
   ">=100ms": chalk.red,
-};
+} as const;
 
 const chalkColorsMap: Record<string, Chalk> = {
   magenta: chalk.magenta,
@@ -71,7 +71,7 @@ const chalkColorsMap: Record<string, Chalk> = {
   blueBright: chalk.blueBright,
   cyanBright: chalk.cyanBright,
   whiteBright: chalk.whiteBright,
-};
+} as const;
 
 const MONTHS = [
   "Jan",
@@ -86,7 +86,7 @@ const MONTHS = [
   "Oct",
   "Nov",
   "Dec",
-];
+] as const;
 
 const regexes = {
   // https://github.com/pbojinov/request-ip/blob/master/lib/is.js#L4
@@ -96,9 +96,9 @@ const regexes = {
   number: /(\d)(?=(\d\d\d)+(?!\d))/g,
   time: /(\d+)(ms|s)/,
   token: /:\[([a-z\-_]+)\]/g,
-  tokenWithourBrackets: /\[|\]/g,
+  tokenWithoutBrackets: /\[|\]/g,
   tokenFormat: /(:\[[^\]]+\]|:[a-z\-_]+)/gi,
-};
+} as const;
 
 /**
  * Convert number into human readable format.
@@ -120,24 +120,13 @@ function humanize(n: string, o?: Options) {
 /**
  * Get color for time.
  *
- * @param t {string} Time
+ * @param t {number} Time
  * @returns {Chalk} Chalk instance
  */
-function getColorForTime(t: string) {
-  const match = t.match(regexes.time);
-
-  if (match) {
-    const value = parseInt(match[1], 10);
-    const unit = match[2];
-
-    const milliseconds = unit === "ms" ? value : value * 1000;
-
-    if (milliseconds < 50) return timeColorMap["<50ms"];
-    if (milliseconds < 100) return timeColorMap["<100ms"];
-    return timeColorMap[">=100ms"];
-  }
-
-  return chalk.gray;
+function getColorForTime(t: number) {
+  if (t < 50) return timeColorMap["<50ms"];
+  if (t < 100) return timeColorMap["<100ms"];
+  return timeColorMap[">=100ms"];
 }
 
 /**
@@ -152,7 +141,10 @@ function time(start: number) {
     delta < 10000 ? `${delta}ms` : `${Math.round(delta / 1000)}s`,
   );
 
-  return t;
+  return {
+    time: t,
+    delta,
+  };
 }
 
 /**
@@ -290,7 +282,9 @@ const TOKENS = [
   ":response-time",
   ":referrer",
   ":user-agent",
-];
+] as const;
+
+type Token = (typeof TOKENS)[number];
 
 /**
  * Get chalk color function for provided color.
@@ -321,7 +315,7 @@ const REQUEST: Record<string, (req: Request) => string> = {
   ":user-agent": (req) => req.headers["user-agent"] || "-",
   ":http-version": (req) =>
     "HTTP/" + req.httpVersionMajor + "." + req.httpVersionMinor,
-};
+} as const;
 
 /** Get value for provided token form outgoing response at runtime. */
 const RESPONSE: Record<
@@ -367,15 +361,15 @@ const RESPONSE: Record<
   },
   ":response-time": (_, res) => {
     const start = res.getHeader("x-start-time") as string;
-    const t = time(Number(start));
+    const { time: t, delta } = time(Number(start));
     return {
       value: t,
-      colorized: getColorForTime(t),
+      colorized: getColorForTime(delta),
     };
   },
   ":method": (req) => req.method,
   ":url": (req) => req.originalUrl || req.url,
-};
+} as const;
 
 /**
  * Pre compile format string.
@@ -385,37 +379,29 @@ const RESPONSE: Record<
  * @returns {function}
  */
 function interpolate(token: string, color: string | chalk.Chalk) {
-  if (token.match(regexes.token)) {
-    const t = token.replace(regexes.tokenWithourBrackets, "");
-    return (isRequest: boolean, req: Request, res: Response, err: any) => {
-      if (isRequest) {
-        const v = REQUEST[t](req);
-        return colorizedFn(color)(`[${v}]`);
-      }
-
-      const v = RESPONSE[t](req, res, err);
-      if (typeof v === "object") {
-        const { value, colorized } = v;
-        return colorized(`[${value}]`);
-      }
-
-      return colorizedFn(color)(`[${v}]`);
-    };
-  }
+  const isContainsBrackets = token.match(regexes.tokenWithoutBrackets);
 
   return (isRequest: boolean, req: Request, res: Response, err: any) => {
+    const t = token.replace(regexes.tokenWithoutBrackets, "");
+
     if (isRequest) {
-      const v = REQUEST[token](req);
-      return colorizedFn(color)(`${v}`);
+      const v = REQUEST[t](req);
+      return isContainsBrackets
+        ? colorizedFn(color)(`[${v}]`)
+        : colorizedFn(color)(`${v}`);
     }
 
-    const v = RESPONSE[token](req, res, err);
+    const v = RESPONSE[t](req, res, err);
     if (typeof v === "object") {
       const { value, colorized } = v;
-      return colorized(`${value}`);
+      return isContainsBrackets
+        ? colorized(`[${value}]`)
+        : colorized(`${value}`);
     }
 
-    return colorizedFn(color)(`${v}`);
+    return isContainsBrackets
+      ? colorizedFn(color)(`[${v}]`)
+      : colorizedFn(color)(`${v}`);
   };
 }
 
@@ -464,11 +450,11 @@ function extractTokens(format: string) {
     .map((token) => token.replace(/\s/g, ""))
     .filter((token) => {
       const tokenWithoutBrackets = token.replace(
-        regexes.tokenWithourBrackets,
+        regexes.tokenWithoutBrackets,
         "",
       );
       if (tokenWithoutBrackets === ":incoming") flagIncomingSet = true;
-      return TOKENS.includes(tokenWithoutBrackets);
+      return TOKENS.includes(tokenWithoutBrackets as Token);
     });
 
   parsedTokens[format] = {
@@ -496,7 +482,7 @@ function compile(format: string) {
   let i = -999;
 
   tokens.forEach((token) => {
-    const value = token.replace(regexes.tokenWithourBrackets, "");
+    const value = token.replace(regexes.tokenWithoutBrackets, "");
     if (value === ":incoming") {
       requestOutput.push(chalk.gray("<--"));
       responseOutput.push("-->");

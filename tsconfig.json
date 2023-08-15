@@ -10,5 +10,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "dist", "./example.ts"]
+  "include": ["./index.ts"]
 }

@@ -45,11 +45,23 @@ const logger = new Logger();
 // );
 
 // default format and transporter
-app.use(chrona());
+app.use(
+  chrona(
+    ":[date] :incoming :[method] :url :[status] :[response-time] :[content-length] :user-agent :[http-version]",
+  ),
+);
 
-router.get("/users", (_, res) => {
+function timeout(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+router.get("/users", async (_, res) => {
+  await timeout(1000);
   return res.status(200).json({
     message: "Users fetched successfully",
+    users: Array.from({ length: 200 }, (_, i) => ({
+      id: i,
+    })),
   });
 });
 
