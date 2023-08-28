@@ -6,9 +6,6 @@ import type { Chalk } from "chalk";
 import type { NextFunction, Request, Response } from "express";
 /* ----------------------------------------------------------------------------------------------- */
 
-/* -----------------------------------------------------------------------------------------------
- * Type definitions
- * -----------------------------------------------------------------------------------------------*/
 type LoggerOptions =
   | {
       transporter?: (string: string, args: unknown[]) => void;
@@ -33,9 +30,6 @@ type ParsedTokens = {
   };
 };
 
-/* -----------------------------------------------------------------------------------------------
- * Globals
- * -----------------------------------------------------------------------------------------------*/
 const DEFAULT_FORMAT =
   ":incoming :method :url :status :response-time :content-length";
 const colorCodes: Record<number, string> = {
@@ -271,7 +265,7 @@ const REQUEST: Record<string, (req: Request) => string> = {
     "HTTP/" + req.httpVersionMajor + "." + req.httpVersionMinor,
 } as const;
 
-/** Get value for provided token form outgoing response at runtime. */
+/** Get value for provided token from outgoing response at runtime. */
 const RESPONSE: Record<
   string,
   (
