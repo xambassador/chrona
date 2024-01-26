@@ -214,9 +214,22 @@ function colorizedFn(color: string | chalk.Chalk) {
   return colorized;
 }
 
+const METHODS_SPACER = {
+  GET: "    ",
+  POST: "   ",
+  PUT: "    ",
+  DELETE: " ",
+  PATCH: "  ",
+  HEAD: "   ",
+  OPTIONS: "",
+  CONNECT: "",
+  TRACE: "  ",
+};
+
 /** Get values for provided tokens for incoming request at runtime. */
 const REQUEST: Record<string, (req: Request) => string> = {
-  ":method": (req) => req.method,
+  ":method": (req) =>
+    req.method + METHODS_SPACER[req.method as keyof typeof METHODS_SPACER],
   ":url": (req) => req.originalUrl || req.url,
   ":date": () => timestamp(),
   ":remote-address": (req) => getIp(req) as string,
@@ -277,7 +290,8 @@ const RESPONSE: Record<
       colorized: getColorForTime(delta),
     };
   },
-  ":method": (req) => req.method,
+  ":method": (req) =>
+    req.method + METHODS_SPACER[req.method as keyof typeof METHODS_SPACER],
   ":url": (req) => req.originalUrl || req.url,
 } as const;
 
@@ -372,28 +386,23 @@ function compile(format: string) {
   const responseOutput = isIncommingSet ? [chalk.gray(" OUTGOING ")] : [];
 
   if (!isIncommingSet) {
-    requestOutput.push(chalk.gray("<--"));
-    responseOutput.push("-->");
+    requestOutput.push(chalk.gray(" <-- "));
+    responseOutput.push(" --> ");
     whereTheResponseIndicatorIs = responseOutput.length - 1;
   }
 
   const requstArgs: InterpolateReturnType[] = [];
   const responseArgs: InterpolateReturnType[] = [];
 
+  let isProtocolPushedForRequest = false;
+  let isProtocolPushedForResponse = false;
+
   tokens.forEach((token) => {
     const value = token.replace(regexes.tokenWithoutBrackets, "");
     if (value === ":incoming") {
-      requestOutput.push(chalk.gray("<--"));
-      responseOutput.push("-->");
+      requestOutput.push(chalk.gray(" <-- "));
+      responseOutput.push(" --> ");
       whereTheResponseIndicatorIs = responseOutput.length - 1;
-      return;
-    }
-
-    if (value === ":date") {
-      requestOutput.push("%s");
-      requstArgs.push(REQUEST_TOKENS[value](token));
-      responseOutput.push("%s");
-      responseArgs.push(RESPONSE_TOKENS[value](token));
       return;
     }
 
@@ -415,9 +424,12 @@ function compile(format: string) {
     print: (...args: unknown[]) => void,
   ) => {
     const results = requstArgs.map((fn) => fn(true, request, response, error));
-    requestOutput.unshift(
-      chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
-    );
+    if (!isProtocolPushedForRequest) {
+      requestOutput.unshift(
+        chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
+      );
+      isProtocolPushedForRequest = true;
+    }
     const string = util.format(requestOutput.join(" "), ...results);
     print(string);
   };
@@ -433,26 +445,31 @@ function compile(format: string) {
       fn(false, request, response, error),
     );
 
+    if (!isProtocolPushedForResponse) {
+      responseOutput.unshift(
+        chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
+      );
+      whereTheResponseIndicatorIs += 1;
+      isProtocolPushedForResponse = true;
+    }
+
     if (whereTheResponseIndicatorIs !== -999) {
       let upstream: string;
       if (error) {
-        upstream = chalk.red("xxx");
+        upstream = chalk.red(" xxx ");
       } else if (event === "close") {
-        upstream = chalk.yellow("-x-");
+        upstream = chalk.yellow(" -x- ");
       } else if (response.statusCode >= 500) {
-        upstream = chalk.red("xxx");
+        upstream = chalk.red(" xxx ");
       } else if (response.statusCode === 404) {
-        upstream = chalk.cyan("-X-");
+        upstream = chalk.cyan(" -x- ");
       } else {
-        upstream = chalk.gray("-->");
+        upstream = chalk.gray(" --> ");
       }
 
       responseOutput[whereTheResponseIndicatorIs] = upstream;
     }
 
-    responseOutput.unshift(
-      chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
-    );
     const string = util.format(responseOutput.join(" "), ...results);
     print(string);
   };
