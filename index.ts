@@ -26,7 +26,7 @@ type Options = {
 type ParsedTokens = {
   [key: string]: {
     tokens: string[];
-    flagIncomingSet: boolean;
+    isIncommingSet: boolean;
   };
 };
 
@@ -67,21 +67,6 @@ const chalkColorsMap: Record<string, Chalk> = {
   whiteBright: chalk.whiteBright,
 } as const;
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-] as const;
-
 const regexes = {
   // https://github.com/pbojinov/request-ip/blob/master/lib/is.js#L4
   ipv4: /^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/,
@@ -92,11 +77,19 @@ const regexes = {
   token: /:\[([a-z\-_]+)\]/g,
   tokenWithoutBrackets: /\[|\]/g,
   tokenFormat: /(:\[[^\]]+\]|:[a-z\-_]+)/gi,
+  date: /(?=(YYYY|YY|MM|DD|HH|mm|ss|ms))\1([:/]*)/g,
 } as const;
+
+/** @returns Current timestamp in human readable format. */
+function timestamp() {
+  const d = new Date();
+  const dateString = d.toLocaleDateString();
+  const timeString = d.toLocaleTimeString("en-US", { hour12: true });
+  return `${dateString} ${timeString}`.trim().replace(/\s+/g, " ");
+}
 
 /** Convert number into human readable format. */
 function humanize(n: string, o?: Options) {
-  // https://github.com/component/humanize-number/blob/master/index.js
   const options = o || {};
   const d = options.delimiter || ",";
   const s = options.separator || ".";
@@ -191,37 +184,6 @@ function getIp(req: Request) {
   return "-";
 }
 
-/** Pad number with zero. */
-function pad2(num: number) {
-  const str = String(num);
-  return (str.length === 1 ? "0" : "") + str;
-}
-
-/** Get date in Apache common log format. */
-function date(dateTime: Date) {
-  const currentDate = dateTime.getUTCDate();
-  const hour = dateTime.getUTCHours();
-  const mins = dateTime.getUTCMinutes();
-  const secs = dateTime.getUTCSeconds();
-  const year = dateTime.getUTCFullYear();
-  const month = MONTHS[dateTime.getUTCMonth()];
-
-  return (
-    pad2(currentDate) +
-    "/" +
-    month +
-    "/" +
-    year +
-    ":" +
-    pad2(hour) +
-    ":" +
-    pad2(mins) +
-    ":" +
-    pad2(secs) +
-    " +0000"
-  );
-}
-
 /** Pre-defined tokens. */
 const TOKENS = [
   ":incoming",
@@ -256,7 +218,7 @@ function colorizedFn(color: string | chalk.Chalk) {
 const REQUEST: Record<string, (req: Request) => string> = {
   ":method": (req) => req.method,
   ":url": (req) => req.originalUrl || req.url,
-  ":date": () => date(new Date()),
+  ":date": () => timestamp(),
   ":remote-address": (req) => getIp(req) as string,
   ":referrer": (req) =>
     (req.headers.referer || req.headers.referrer || "-") as string,
@@ -274,7 +236,7 @@ const RESPONSE: Record<
     err: any,
   ) => string | { value: string; colorized: chalk.Chalk }
 > = {
-  ":date": () => date(new Date()),
+  ":date": () => timestamp(),
   ":status": (_, res, err) => {
     const status = err ? (err as any).status || 500 : res.statusCode || 404;
     const s = (status / 100) | 0;
@@ -322,28 +284,27 @@ const RESPONSE: Record<
 /** Pre compile format string. */
 function interpolate(token: string, color: string | chalk.Chalk) {
   const isContainsBrackets = token.match(regexes.tokenWithoutBrackets);
+  const t = token.replace(regexes.tokenWithoutBrackets, "");
 
   return (isRequest: boolean, req: Request, res: Response, err: any) => {
-    const t = token.replace(regexes.tokenWithoutBrackets, "");
-
     if (isRequest) {
-      const v = REQUEST[t](req);
+      const result = REQUEST[t](req);
       return isContainsBrackets
-        ? colorizedFn(color)(`[${v}]`)
-        : colorizedFn(color)(`${v}`);
+        ? colorizedFn(color)(`[${result}]`)
+        : colorizedFn(color)(`${result}`);
     }
 
-    const v = RESPONSE[t](req, res, err);
-    if (typeof v === "object") {
-      const { value, colorized } = v;
+    const result = RESPONSE[t](req, res, err);
+    if (typeof result === "object") {
+      const { value, colorized } = result;
       return isContainsBrackets
         ? colorized(`[${value}]`)
         : colorized(`${value}`);
     }
 
     return isContainsBrackets
-      ? colorizedFn(color)(`[${v}]`)
-      : colorizedFn(color)(`${v}`);
+      ? colorizedFn(color)(`[${result}]`)
+      : colorizedFn(color)(`${result}`);
   };
 }
 
@@ -380,7 +341,7 @@ const parsedTokens: ParsedTokens = {};
 function extractTokens(format: string) {
   if (parsedTokens[format]) return parsedTokens[format];
 
-  let flagIncomingSet = false;
+  let isIncommingSet = false;
   const tokens = format
     .split(regexes.tokenFormat)
     .filter((token) => token.trim() !== "")
@@ -390,13 +351,13 @@ function extractTokens(format: string) {
         regexes.tokenWithoutBrackets,
         "",
       );
-      if (tokenWithoutBrackets === ":incoming") flagIncomingSet = true;
+      if (tokenWithoutBrackets === ":incoming") isIncommingSet = true;
       return TOKENS.includes(tokenWithoutBrackets as Token);
     });
 
   parsedTokens[format] = {
     tokens,
-    flagIncomingSet,
+    isIncommingSet,
   };
 
   return parsedTokens[format];
@@ -404,21 +365,35 @@ function extractTokens(format: string) {
 
 /** Compile format string. */
 function compile(format: string) {
-  const { flagIncomingSet, tokens } = extractTokens(format);
+  const { isIncommingSet, tokens } = extractTokens(format);
 
-  const requestOutput = flagIncomingSet ? [chalk.gray("[INCOMING]")] : [];
-  const responseOutput = flagIncomingSet ? [chalk.gray("[OUTGOING]")] : [];
+  let whereTheResponseIndicatorIs = -999;
+  const requestOutput = isIncommingSet ? [chalk.gray(" INCOMING ")] : [];
+  const responseOutput = isIncommingSet ? [chalk.gray(" OUTGOING ")] : [];
+
+  if (!isIncommingSet) {
+    requestOutput.push(chalk.gray("<--"));
+    responseOutput.push("-->");
+    whereTheResponseIndicatorIs = responseOutput.length - 1;
+  }
 
   const requstArgs: InterpolateReturnType[] = [];
   const responseArgs: InterpolateReturnType[] = [];
-  let i = -999;
 
   tokens.forEach((token) => {
     const value = token.replace(regexes.tokenWithoutBrackets, "");
     if (value === ":incoming") {
       requestOutput.push(chalk.gray("<--"));
       responseOutput.push("-->");
-      i = responseOutput.length - 1;
+      whereTheResponseIndicatorIs = responseOutput.length - 1;
+      return;
+    }
+
+    if (value === ":date") {
+      requestOutput.push("%s");
+      requstArgs.push(REQUEST_TOKENS[value](token));
+      responseOutput.push("%s");
+      responseArgs.push(RESPONSE_TOKENS[value](token));
       return;
     }
 
@@ -439,10 +414,11 @@ function compile(format: string) {
     error: any,
     print: (...args: unknown[]) => void,
   ) => {
-    const compiledArgs = requstArgs.map((fn) =>
-      fn(true, request, response, error),
+    const results = requstArgs.map((fn) => fn(true, request, response, error));
+    requestOutput.unshift(
+      chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
     );
-    const string = util.format(requestOutput.join(" "), ...compiledArgs);
+    const string = util.format(requestOutput.join(" "), ...results);
     print(string);
   };
 
@@ -453,11 +429,11 @@ function compile(format: string) {
     event: string,
     print: (...args: unknown[]) => void,
   ) => {
-    const compiledArgs = responseArgs.map((fn) =>
+    const results = responseArgs.map((fn) =>
       fn(false, request, response, error),
     );
 
-    if (i !== -999) {
+    if (whereTheResponseIndicatorIs !== -999) {
       let upstream: string;
       if (error) {
         upstream = chalk.red("xxx");
@@ -471,10 +447,13 @@ function compile(format: string) {
         upstream = chalk.gray("-->");
       }
 
-      responseOutput[i] = upstream;
+      responseOutput[whereTheResponseIndicatorIs] = upstream;
     }
 
-    const string = util.format(responseOutput.join(" "), ...compiledArgs);
+    responseOutput.unshift(
+      chalk.bgBlue.bold(` ${request.protocol.toUpperCase()} `),
+    );
+    const string = util.format(responseOutput.join(" "), ...results);
     print(string);
   };
 
